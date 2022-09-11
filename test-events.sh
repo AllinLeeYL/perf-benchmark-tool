@@ -5,6 +5,10 @@
 # Because not all events can be listed by a non-root user.
 # This script will generate two files "compare.csv" and "perf.output"
 # "compare.csv" records the output of perf stat for each event
+#               Each line represents a single perf stat test. 
+#               A group of events are seperated by "---"
+#               Count of every event is seperated by ","
+#               Note: You can find name of event count in valid_events_hw
 # "perf.output" saves perf output as a reference for debug.
 # ----------------README END  ----------------
 
@@ -32,32 +36,33 @@ function_test_as_N_groups(){
     local LENSW="$(expr ${LENSW_ALL} / ${N})"
     rm $WORKDIR/compare.csv
     for i in $(seq 1 ${N}); do
-        for j in $(seq 1 ${REPEAT}); do
-            # Hardware event list
-            local startline="$(expr ${i} \* ${LENHW} - ${LENHW} + 1)"
-            local endline="$(expr ${startline} + ${LENHW} - 1)"
-            EVLISTHW=$(sed -n "${startline},${endline}p" ${WORKDIR}/valid_events_hw)
-            # Software event list
-            local startline="$(expr ${i} \* ${LENSW} - ${LENSW} + 1)"
-            local endline="$(expr ${startline} + ${LENSW} - 1)"
-            EVLISTSW=$(sed -n "${startline},${endline}p" ${WORKDIR}/valid_events_sw)
-            # Append event list
-            EVLIST=
-            for line in ${EVLISTHW}; do
-                if [ "$EVLIST" = "" ]; then
-                    EVLIST=${line}
-                else
-                    EVLIST="${EVLIST},${line}"
-                fi
-            done
-            for line in ${EVLISTSW}; do
+        # Hardware event list
+        local startline="$(expr ${i} \* ${LENHW} - ${LENHW} + 1)"
+        local endline="$(expr ${startline} + ${LENHW} - 1)"
+        EVLISTHW=$(sed -n "${startline},${endline}p" ${WORKDIR}/valid_events_hw)
+        # Software event list
+        local startline="$(expr ${i} \* ${LENSW} - ${LENSW} + 1)"
+        local endline="$(expr ${startline} + ${LENSW} - 1)"
+        EVLISTSW=$(sed -n "${startline},${endline}p" ${WORKDIR}/valid_events_sw)
+        # Append event list
+        EVLIST=
+        for line in ${EVLISTHW}; do
+            if [ "$EVLIST" = "" ]; then
+                EVLIST=${line}
+            else
                 EVLIST="${EVLIST},${line}"
-            done
+            fi
+        done
+        for line in ${EVLISTSW}; do
+            EVLIST="${EVLIST},${line}"
+        done
+        echo "${EVLIST}" >> $WORKDIR/compare.csv
+        for j in $(seq 1 ${REPEAT}); do
             perf stat -o $WORKDIR/perf.output -e $EVLIST $COMMANDSPEC > /dev/null
             cat $WORKDIR/perf.output | sed -n "6,$(expr 6 + ${LENHW} + ${LENSW} - 1)p" | awk '{print $1}' | tr '\n' ',' >> $WORKDIR/compare.csv
             echo "" >> $WORKDIR/compare.csv
         done
-        exit 0 # for test
+        # exit 0 # for test
         echo "---" >> $WORKDIR/compare.csv
     done
 }
