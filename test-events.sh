@@ -56,14 +56,21 @@ function_test_as_N_groups(){
         for line in ${EVLISTSW}; do
             EVLIST="${EVLIST},${line}"
         done
+        # output event names
         echo "${EVLIST}" >> $WORKDIR/compare.csv
+        # test by group
+        for event in $(echo ${EVLIST} | tr ',' '\n'); do
+            perf stat -o $WORKDIR/perf.output -e $event $COMMANDSPEC > /dev/null
+            cat $WORKDIR/perf.output | sed -n "6,6p" | awk '{print $1}' | tr '\n' ',' >> $WORKDIR/compare.csv
+        done
+        echo "" >> $WORKDIR/compare.csv
         for j in $(seq 1 ${REPEAT}); do
             perf stat -o $WORKDIR/perf.output -e $EVLIST $COMMANDSPEC > /dev/null
             cat $WORKDIR/perf.output | sed -n "6,$(expr 6 + ${LENHW} + ${LENSW} - 1)p" | awk '{print $1}' | tr '\n' ',' >> $WORKDIR/compare.csv
             echo "" >> $WORKDIR/compare.csv
         done
-        # exit 0 # for test
         echo "---" >> $WORKDIR/compare.csv
+        exit 0 # for test
     done
 }
 
