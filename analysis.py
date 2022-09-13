@@ -1,4 +1,4 @@
-
+import sys
 import numpy as np
 
 def parsefile():
@@ -17,7 +17,7 @@ def parsefile():
         data.append({"names":names, "counts":counts})
     return data
 
-def analysis():
+def analysis(fl_rate):
     data = parsefile()
     # Preprocess
     for i, group in enumerate(data):
@@ -39,9 +39,9 @@ def analysis():
                 flct_rate = 1 if fluctrate > 10 else 0
             else:
                 flct_rate = fluctrate / counts.T[j][0]
-            if flct_rate > 0.2 or name == 'branch-instructions':
+            if flct_rate > fl_rate or name == 'branch-instructions':
                 print(name, counts.T[j])
 
 
 if __name__ == "__main__":
-    analysis()
+    analysis(float(sys.argv[1]))

@@ -14,6 +14,7 @@
 
 # ----------------VARIABLE BEGIN----------------
 WORKDIR=${PWD}
+FEEDBACK=${WORKDIR}/feedback
 SPECDIR=/home/liyilin/spec2000-all
 COMMANDSPEC="runspec --config=x86_64.O0.cfg --input test -n 1 -I -D 252.eon"
 VALID_PROMPT="\t\e[32m [valid!] \e[0m"
@@ -46,31 +47,53 @@ function_test_as_N_groups(){
         EVLISTSW=$(sed -n "${startline},${endline}p" ${WORKDIR}/valid_events_sw)
         # Append event list
         EVLIST=
-        for line in ${EVLISTHW}; do
-            if [ "$EVLIST" = "" ]; then
-                EVLIST=${line}
-            else
-                EVLIST="${EVLIST},${line}"
-            fi
-        done
-        for line in ${EVLISTSW}; do
-            EVLIST="${EVLIST},${line}"
-        done
+        if [ -f ${FEEDBACK} ]; then # Feedback file exists
+            for line in ${EVLISTHW}; do
+                if [ $(grep ${line} ${FEEDBACK} | wc -l | awk '{print $1}') -ne "0" ]; then
+                    continue
+                else
+                    if [ "$EVLIST" = "" ]; then
+                        EVLIST=${line}
+                    else
+                        EVLIST="${EVLIST},${line}"
+                    fi
+                fi
+            done
+            # for line in ${EVLISTSW}; do
+            #     if [ $(grep ${line} ${FEEDBACK} | wc -l | awk '{print $1}') -ne "0" ]; then
+            #         continue
+            #     else
+            #         EVLIST="${EVLIST},${line}"
+            #     fi
+            # done
+        else # No feedback file
+            for line in ${EVLISTHW}; do
+                if [ "$EVLIST" = "" ]; then
+                    EVLIST=${line}
+                else
+                    EVLIST="${EVLIST},${line}"
+                fi
+            done
+            # for line in ${EVLISTSW}; do
+            #     EVLIST="${EVLIST},${line}"
+            # done
+        fi
         # output event names
         echo "${EVLIST}" >> $WORKDIR/compare.csv
-        # test by group
+        # test each event once for reference
         for event in $(echo ${EVLIST} | tr ',' '\n'); do
             perf stat -o $WORKDIR/perf.output -e $event $COMMANDSPEC > /dev/null
             cat $WORKDIR/perf.output | sed -n "6,6p" | awk '{print $1}' | tr '\n' ',' >> $WORKDIR/compare.csv
         done
         echo "" >> $WORKDIR/compare.csv
+        # test by group
         for j in $(seq 1 ${REPEAT}); do
             perf stat -o $WORKDIR/perf.output -e $EVLIST $COMMANDSPEC > /dev/null
             cat $WORKDIR/perf.output | sed -n "6,$(expr 6 + ${LENHW} + ${LENSW} - 1)p" | awk '{print $1}' | tr '\n' ',' >> $WORKDIR/compare.csv
             echo "" >> $WORKDIR/compare.csv
         done
         echo "---" >> $WORKDIR/compare.csv
-        exit 0 # for test
+        # exit 0 # for test
     done
 }
 
