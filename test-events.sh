@@ -22,7 +22,7 @@ NOT_VALID_PROMPT="\t\e[31m [not valid!] \e[0m"
 # ----------------VARIABLE END  ----------------
 
 function_read_events_from_file(){
-    HWEVS="$(cat ${WORKDIR}/valid_events_hw)"
+    HWEVS="$(cat ${WORKDIR}/per-thread-events_hw)"
     SWEVS="$(cat ${WORKDIR}/valid_events_sw)"
 }
 
@@ -31,7 +31,7 @@ function_test_as_N_groups(){
     source $SPECDIR/shrc
     local N="${1}"
     local REPEAT="${2}"
-    local LENHW_ALL="$(wc -l ${WORKDIR}/valid_events_hw | awk '{print $1}')"
+    local LENHW_ALL="$(wc -l ${WORKDIR}/per-thread-events_hw | awk '{print $1}')"
     local LENHW="$(expr ${LENHW_ALL} / ${N})"
     local LENSW_ALL="$(wc -l ${WORKDIR}/valid_events_sw | awk '{print $1}')"
     local LENSW="$(expr ${LENSW_ALL} / ${N})"
@@ -40,44 +40,24 @@ function_test_as_N_groups(){
         # Hardware event list
         local startline="$(expr ${i} \* ${LENHW} - ${LENHW} + 1)"
         local endline="$(expr ${startline} + ${LENHW} - 1)"
-        EVLISTHW=$(sed -n "${startline},${endline}p" ${WORKDIR}/valid_events_hw)
+        EVLISTHW=$(sed -n "${startline},${endline}p" ${WORKDIR}/per-thread-events_hw)
         # Software event list
         local startline="$(expr ${i} \* ${LENSW} - ${LENSW} + 1)"
         local endline="$(expr ${startline} + ${LENSW} - 1)"
         EVLISTSW=$(sed -n "${startline},${endline}p" ${WORKDIR}/valid_events_sw)
         # Append event list
         EVLIST=
-        if [ -f ${FEEDBACK} ]; then # Feedback file exists
-            for line in ${EVLISTHW}; do
-                if [ $(grep ${line} ${FEEDBACK} | wc -l | awk '{print $1}') -ne "0" ]; then
-                    continue
-                else
-                    if [ "$EVLIST" = "" ]; then
-                        EVLIST=${line}
-                    else
-                        EVLIST="${EVLIST},${line}"
-                    fi
-                fi
-            done
-            # for line in ${EVLISTSW}; do
-            #     if [ $(grep ${line} ${FEEDBACK} | wc -l | awk '{print $1}') -ne "0" ]; then
-            #         continue
-            #     else
-            #         EVLIST="${EVLIST},${line}"
-            #     fi
-            # done
-        else # No feedback file
-            for line in ${EVLISTHW}; do
-                if [ "$EVLIST" = "" ]; then
-                    EVLIST=${line}
-                else
-                    EVLIST="${EVLIST},${line}"
-                fi
-            done
-            # for line in ${EVLISTSW}; do
-            #     EVLIST="${EVLIST},${line}"
-            # done
-        fi
+        for line in ${EVLISTHW}; do
+            if [ "$EVLIST" = "" ]; then
+                EVLIST=${line}
+            else
+                EVLIST="${EVLIST},${line}"
+            fi
+        done
+        # for line in ${EVLISTSW}; do
+        #     EVLIST="${EVLIST},${line}"
+        # done
+
         # output event names
         echo "${EVLIST}" >> $WORKDIR/compare.csv
         # test each event once for reference
@@ -89,7 +69,7 @@ function_test_as_N_groups(){
         # test by group
         for j in $(seq 1 ${REPEAT}); do
             perf stat -o $WORKDIR/perf.output -e $EVLIST $COMMANDSPEC > /dev/null
-            cat $WORKDIR/perf.output | sed -n "6,$(expr 6 + ${LENHW} + ${LENSW} - 1)p" | awk '{print $1}' | tr '\n' ',' >> $WORKDIR/compare.csv
+            cat $WORKDIR/perf.output | sed -n "6,$(expr 6 + ${LENHW} - 1)p" | awk '{print $1}' | tr '\n' ',' >> $WORKDIR/compare.csv
             echo "" >> $WORKDIR/compare.csv
         done
         echo "---" >> $WORKDIR/compare.csv
@@ -97,6 +77,6 @@ function_test_as_N_groups(){
     done
 }
 
-
+# Example usage: `sudo bash test-events.sh 20 50` means split hw_events into 20 groups and repeat 50 times for every group
 function_read_events_from_file
 function_test_as_N_groups "${1}" "${2}" # N_GROUP, REPEAT_N_TIMES

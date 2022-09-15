@@ -60,8 +60,8 @@ EVLIST_DETAIL=$(perf list --no-desc | grep -E "\[(Hardware.*event)|(Kernel PMU e
 function_get_valid_events "hw"
 function_echo_prompt_end "hardware"
 # Software events
-function_echo_prompt_start "software"
-EVLIST_DETAIL=$(perf list --no-desc | grep -E "\[.*event\]" | grep -E -v "\[(Hardware.*event)|(Kernel PMU event)\]")
-function_get_valid_events "sw" "hw"
-function_echo_prompt_end "software"
+# function_echo_prompt_start "software"
+# EVLIST_DETAIL=$(perf list --no-desc | grep -E "\[.*event\]" | grep -E -v "\[(Hardware.*event)|(Kernel PMU event)\]")
+# function_get_valid_events "sw" "hw"
+# function_echo_prompt_end "software"
 

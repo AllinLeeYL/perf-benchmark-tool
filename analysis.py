@@ -43,5 +43,6 @@ def analysis(fl_rate):
                 print(name, counts.T[j])
 
 
+# Example usage: python3 analysis.py 0.2
 if __name__ == "__main__":
     analysis(float(sys.argv[1]))
