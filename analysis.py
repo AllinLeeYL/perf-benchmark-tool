@@ -39,8 +39,11 @@ def analysis(fl_rate):
                 flct_rate = 1 if fluctrate > 10 else 0
             else:
                 flct_rate = fluctrate / counts.T[j][0]
-            if flct_rate > fl_rate or name == 'branch-instructions':
-                print(name, counts.T[j])
+            if flct_rate > fl_rate:
+                if name[-1] == '\n':
+                    name = name[:-1]
+                print(name, max(counts.T[j]), min(counts.T[j]), fluctrate, counts.T[j][0], flct_rate)
+                print(counts.T[j])
 
 
 # Example usage: python3 analysis.py 0.2
